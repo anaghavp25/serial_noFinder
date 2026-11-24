@@ -1,8 +1,8 @@
 """Printing through the system print dialog (native on Windows)."""
-from typing import List, Optional
+from typing import List
 
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtGui import QGuiApplication, QImage, QPageRanges, QPainter, QTransform
+from PySide6.QtGui import QGuiApplication, QImage, QPainter, QTransform
 from PySide6.QtPrintSupport import QAbstractPrintDialog, QPrintDialog, QPrinter
 from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
@@ -42,10 +42,6 @@ def print_pages(printer: QPrinter, pdf_path, pages: List[int], copies: int = 1) 
 def selected_pages(printer: QPrinter, page_count: int, current: int) -> List[int]:
     r = printer.printRange()
     if r == QPrinter.PrintRange.PageRange:
-        ranges = printer.pageRanges().toRangeList()
-        if ranges:
-            return [page for page_range in ranges
-                    for page in range(max(1, page_range.from_), min(page_count, page_range.to) + 1)]
         a = max(1, printer.fromPage() or 1)
         b = min(page_count, printer.toPage() or page_count)
         return list(range(a, max(a, b) + 1))
@@ -54,28 +50,17 @@ def selected_pages(printer: QPrinter, page_count: int, current: int) -> List[int
     return list(range(1, page_count + 1))
 
 
-def print_document(parent, pdf_path, page_count: int, current_page: int, title: str,
-                   initial_pages: Optional[List[int]] = None) -> bool:
+def print_document(parent, pdf_path, page_count: int, current_page: int, title: str) -> bool:
     """Show the system print dialog (printer, pages, copies, printer settings) and submit the job."""
     printer = QPrinter(QPrinter.PrinterMode.HighResolution)
     printer.setDocName(title)
-    if initial_pages is not None:
-        pages = sorted({p for p in initial_pages if 1 <= p <= page_count})
-        if not pages:
-            raise ValueError("At least one valid page must be selected for printing.")
-        page_ranges = QPageRanges()
-        for page in pages:
-            page_ranges.addPage(page)
-        printer.setPageRanges(page_ranges)
-        printer.setPrintRange(QPrinter.PrintRange.PageRange)
     dlg = QPrintDialog(printer, parent)
     dlg.setWindowTitle(f"Print \u2013 {title}")
     dlg.setOption(QAbstractPrintDialog.PrintDialogOption.PrintPageRange, True)
     dlg.setOption(QAbstractPrintDialog.PrintDialogOption.PrintCurrentPage, True)
     dlg.setMinMax(1, page_count)
-    if initial_pages is None:
-        dlg.setFromTo(current_page, current_page)
-        dlg.setPrintRange(QAbstractPrintDialog.PrintRange.CurrentPage)   # default: the page being looked at
+    dlg.setFromTo(current_page, current_page)
+    dlg.setPrintRange(QAbstractPrintDialog.PrintRange.CurrentPage)       # default: the page being looked at
     if dlg.exec() != QDialog.DialogCode.Accepted:
         return False
     pages = selected_pages(printer, page_count, current_page)

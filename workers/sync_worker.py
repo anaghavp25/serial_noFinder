@@ -1,16 +1,13 @@
 from core.library_sync import sync_library
-from core.ocr_engine import OcrEngine
 from workers.base_worker import TaskWorker
 
 
 class SyncWorker(TaskWorker):
-    title = "Synchronizing library"
+    title = "Loading documents"
 
-    def __init__(self, library, tesseract_cmd="", parent=None):
+    def __init__(self, library, parent=None):
         super().__init__(parent)
-        self.library, self.tesseract_cmd = library, tesseract_cmd
+        self.library = library
 
     def work(self, progress_cb, cancel):
-        s = self.library.settings()
-        ocr = OcrEngine(s["ocr_language"], self.tesseract_cmd, s["ocr_dpi"], s["min_text_chars"])
-        return sync_library(self.library, ocr, progress_cb, cancel)
+        return sync_library(self.library, progress_cb, cancel)

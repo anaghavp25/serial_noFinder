@@ -35,7 +35,7 @@ def render_page_png(pdf_path, page_number: int, zoom: Optional[float] = None, fi
                         page.add_highlight_annot(quads)
                         break
             except Exception:
-                pass  # highlighting is best-effort (OCR'd pages have no text layer)
+                pass  # highlighting is best-effort (only works on pages with selectable text)
         pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False, annots=True)
         return pix.tobytes("png"), zoom, n
     finally:

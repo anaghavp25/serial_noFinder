@@ -60,10 +60,6 @@ def test_first_launch_loads_folder_then_search_view_print_delete(tmp_path, monke
     cards = sp.findChildren(ResultCard)
     assert len(cards) == 1 and cards[0].match.page_number == 2
     assert wait(app, lambda: cards[0].thumb.pixmap() is not None and not cards[0].thumb.pixmap().isNull())
-    assert wait(app, lambda: cards[0].front_thumb.pixmap() is not None and not cards[0].front_thumb.pixmap().isNull())
-    cards[0].view_front_page()
-    assert win.stack.currentIndex() == 2 and win.viewer.page == 1
-    win.viewer.back.emit()
 
     # view page, navigate, back to results
     cards[0].view_page()
@@ -137,10 +133,6 @@ def test_print_pages_reaches_the_printer_for_single_multiple_and_all_pages(tmp_p
     assert selected_pages(pr, 4, 1) == [2, 3]
     pr.setPrintRange(QPrinter.PrintRange.AllPages); assert selected_pages(pr, 4, 1) == [1, 2, 3, 4]
     pr.setPrintRange(QPrinter.PrintRange.CurrentPage); assert selected_pages(pr, 4, 3) == [3]
-    from PySide6.QtGui import QPageRanges
-    ranges = QPageRanges(); ranges.addPage(1); ranges.addPage(3)
-    pr.setPageRanges(ranges); pr.setPrintRange(QPrinter.PrintRange.PageRange)
-    assert selected_pages(pr, 4, 2) == [1, 3]
 
 
 def test_print_button_opens_system_dialog_and_submits_job(tmp_path, monkeypatch):
@@ -164,31 +156,3 @@ def test_print_button_opens_system_dialog_and_submits_job(tmp_path, monkeypatch)
     v = PdfViewer(); v.open(pdf, "p.pdf", 3, 1)
     v.b_print.click()
     assert seen.get("opened") and fitz.open(str(out)).page_count == 2
-
-
-def test_search_print_defaults_to_front_and_matching_pages(tmp_path, monkeypatch):
-    from PySide6.QtPrintSupport import QPrintDialog, QPrinter
-    from PySide6.QtWidgets import QDialog
-    from utils.fitz_compat import fitz
-    from ui.printing import print_document
-    app = QApplication.instance() or QApplication([])
-    pdf = make_pdf(tmp_path / "p.pdf", ["front page", "middle page", "serial match"])
-    out = tmp_path / "selected.pdf"
-    seen = {}
-
-    def fake_exec(self):
-        printer = self.printer()
-        seen["pages"] = [page for r in printer.pageRanges().toRangeList()
-                         for page in range(r.from_, r.to + 1)]
-        seen["range"] = printer.printRange()
-        printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
-        printer.setOutputFileName(str(out))
-        return QDialog.DialogCode.Accepted
-
-    monkeypatch.setattr(QPrintDialog, "exec", fake_exec)
-    assert print_document(None, pdf, 3, 3, "p.pdf", initial_pages=[1, 3])
-    assert seen["pages"] == [1, 3]
-    assert seen["range"] == QPrinter.PrintRange.PageRange
-    doc = fitz.open(str(out))
-    assert doc.page_count == 2
-    doc.close()

@@ -2,8 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QAbstractItemView, QHBoxLayout, QHeaderView, QLabel, QMessageBox, QPushButton, QTableWidget,
                                QTableWidgetItem, QVBoxLayout, QWidget)
 
-NOTES = {"failed": "Cannot be read", "waiting_retry": "Scanned \u2013 needs OCR to be searchable",
-         "partial": "Some pages are not searchable"}
+NOTES = {"failed": "Cannot be read", "no_text": "No selectable text \u2013 cannot be searched"}
 
 
 class DocumentsPage(QWidget):

@@ -7,12 +7,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from core.library_manager import Library          # noqa: E402
-from core.ocr_engine import OcrEngine             # noqa: E402
 from utils.fitz_compat import fitz                # noqa: E402
 
 
 def make_pdf(path: Path, pages, scanned=False, extra_header=None):
-    """pages: list of strings (one per page). scanned=True renders text into an image-only PDF."""
+    """pages: list of strings (one per page). scanned=True makes an image-only PDF (no selectable text)."""
     doc = fitz.open()
     for i, text in enumerate(pages):
         page = doc.new_page()
@@ -42,23 +41,6 @@ def lib(tmp_path):
 @pytest.fixture
 def src(lib):
     return lib.root          # PDFs live directly in the selected folder
-
-
-@pytest.fixture
-def no_ocr():
-    class _Off(OcrEngine):
-        def available(self):
-            self.error = "disabled for test"
-            return False
-    return _Off()
-
-
-@pytest.fixture
-def real_ocr():
-    e = OcrEngine("eng")
-    if not e.available():
-        pytest.skip("Tesseract not installed")
-    return e
 
 
 @pytest.fixture

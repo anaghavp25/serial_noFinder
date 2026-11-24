@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
     def start_sync(self):
         if not self.ctx.library or self.worker is not None:
             return
-        w = SyncWorker(self.ctx.library, self.ctx.config.tesseract_cmd)
+        w = SyncWorker(self.ctx.library)
         self.worker = w
         w.progress.connect(self._on_progress)
         w.succeeded.connect(lambda _r, w=w: self._task_done(w))

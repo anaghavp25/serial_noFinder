@@ -106,7 +106,7 @@ class Library:
             raise LibraryUnavailable(f"The library folder is not available:\n{self.root}")
 
     def purge_document_records(self, conn: sqlite3.Connection, document_id: str) -> None:
-        """Remove a document's record, text, OCR data, index entries and thumbnails."""
+        """Remove a document's record, text, index entries and thumbnails."""
         with transaction(conn):
             remove_document_pages(conn, document_id)
             conn.execute("DELETE FROM missing_documents WHERE document_id=?", (document_id,))

@@ -1,29 +1,20 @@
 SCHEMA_VERSION = 1
 
 # Processing states (documents.processing_status)
-ST_IMPORTED = "imported"
+ST_IMPORTED = "imported"     # registered, waiting to be read
 ST_PROCESSING = "processing"
-ST_TEXT = "text_extracted"
-ST_OCR = "ocr_processing"
 ST_INDEXED = "indexed"
-ST_PARTIAL = "partial"
-ST_FAILED = "failed"
-ST_MODIFIED = "modified"
-ST_WAITING = "waiting_retry"
+ST_NO_TEXT = "no_text"       # readable PDF but no selectable text (e.g. a scan) -> cannot be searched
+ST_FAILED = "failed"         # damaged / password-protected / unreadable
+ST_MODIFIED = "modified"     # changed on disk, old index dropped, waiting to be re-read
 
 # Availability (documents.availability_status)
 AV_AVAILABLE = "available"
 AV_MISSING = "missing"
 AV_INACCESSIBLE = "inaccessible"
 
-SEARCHABLE_STATUSES = (ST_INDEXED, ST_PARTIAL, ST_WAITING)
-PENDING_STATUSES = (ST_IMPORTED, ST_PROCESSING, ST_TEXT, ST_OCR, ST_MODIFIED)
-
-STATUS_LABELS = {
-    ST_IMPORTED: "Imported", ST_PROCESSING: "Processing", ST_TEXT: "Text Extracted",
-    ST_OCR: "OCR Processing", ST_INDEXED: "Indexed", ST_PARTIAL: "Partially Indexed",
-    ST_FAILED: "Failed", ST_MODIFIED: "Modified", ST_WAITING: "Waiting for Retry",
-}
+SEARCHABLE_STATUSES = (ST_INDEXED,)
+PENDING_STATUSES = (ST_IMPORTED, ST_PROCESSING, ST_MODIFIED)
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -42,8 +33,7 @@ CREATE TABLE IF NOT EXISTS documents (
     processing_status TEXT NOT NULL DEFAULT 'imported',
     availability_status TEXT NOT NULL DEFAULT 'available',
     last_verified_timestamp REAL,
-    last_error TEXT,
-    ocr_pages INTEGER NOT NULL DEFAULT 0
+    last_error TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_documents_hash ON documents(content_hash);
 CREATE INDEX IF NOT EXISTS idx_documents_proc ON documents(processing_status);

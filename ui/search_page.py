@@ -52,53 +52,26 @@ class ResultCard(QFrame):
         self.thumb.setStyleSheet("background:#eef1f4;border:1px solid #d9d2c2;")
         self.thumb.setCursor(Qt.CursorShape.PointingHandCursor)
         self.thumb.mousePressEvent = lambda e: self.view_page()
-        self.front_sig = RenderSignals(self)
-        self.front_sig.done.connect(self._front_thumb)
-        self.front_sig.failed.connect(lambda t, m: self.front_thumb.setText("Preview not available"))
-        self.front_thumb = QLabel("Loading\u2026")
-        self.front_thumb.setFixedSize(THUMB_W + 10, int(THUMB_W * 1.42) + 10)
-        self.front_thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.front_thumb.setStyleSheet("background:#eef1f4;border:1px solid #d9d2c2;")
-        self.front_thumb.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.front_thumb.mousePressEvent = lambda e: self.view_front_page()
 
         name = QLabel(res.filename); name.setObjectName("name"); name.setWordWrap(True)
         name.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         where = QLabel(f"Page {match.page_number} of {res.page_count}")
-        front = QLabel("First page")
-        match_label = QLabel(f"Matching page {match.page_number}")
-        previews = QHBoxLayout()
-        for label, thumb in ((front, self.front_thumb), (match_label, self.thumb)):
-            column = QVBoxLayout()
-            column.addWidget(label)
-            column.addWidget(thumb)
-            previews.addLayout(column)
-        b1 = QPushButton("View First Page"); b1.clicked.connect(self.view_front_page)
-        b2 = QPushButton("View Matching Page"); b2.clicked.connect(self.view_page)
-        b3 = QPushButton("Full PDF"); b3.setProperty("kind", "secondary"); b3.clicked.connect(self.view_full)
-        b4 = QPushButton("Print First + Match"); b4.setProperty("kind", "secondary"); b4.clicked.connect(self.print)
+        b1 = QPushButton("View Page"); b1.clicked.connect(self.view_page)
+        b2 = QPushButton("Full PDF"); b2.setProperty("kind", "secondary"); b2.clicked.connect(self.view_full)
+        b3 = QPushButton("Print"); b3.setProperty("kind", "secondary"); b3.clicked.connect(self.print)
         row = QHBoxLayout(); row.setSpacing(10)
-        for b in (b1, b2, b3, b4):
+        for b in (b1, b2, b3):
             row.addWidget(b)
         row.addStretch()
         right = QVBoxLayout(); right.addWidget(name); right.addWidget(where); right.addStretch(); right.addLayout(row)
         lay = QHBoxLayout(self); lay.setContentsMargins(14, 14, 14, 14); lay.setSpacing(18)
-        lay.addLayout(previews); lay.addLayout(right, 1)
+        lay.addWidget(self.thumb); lay.addLayout(right, 1)
         POOL.start(ThumbTask(self.sig, 0, library, res.document_id, res.abs_path, match.page_number, THUMB_W,
-                             res.file_size, res.file_mtime_ns))
-        POOL.start(ThumbTask(self.front_sig, 0, library, res.document_id, res.abs_path, 1, THUMB_W,
                              res.file_size, res.file_mtime_ns))
 
     def _thumb(self, token, data, _z):
         pm = QPixmap(); pm.loadFromData(data, "PNG")
         self.thumb.setPixmap(pm)
-
-    def _front_thumb(self, token, data, _z):
-        pm = QPixmap(); pm.loadFromData(data, "PNG")
-        self.front_thumb.setPixmap(pm)
-
-    def view_front_page(self):
-        self.win.show_viewer(self.res.abs_path, self.res.filename, self.res.page_count, 1, "", back_to=0)
 
     def view_page(self):
         self.win.show_viewer(self.res.abs_path, self.res.filename, self.res.page_count, self.match.page_number,
@@ -111,8 +84,7 @@ class ResultCard(QFrame):
         if not self.res.abs_path.is_file():
             QMessageBox.warning(self, "Print", "This PDF is no longer in the folder.")
             return
-        print_document(self, self.res.abs_path, self.res.page_count, self.match.page_number, self.res.filename,
-                       initial_pages=[1, self.match.page_number])
+        print_document(self, self.res.abs_path, self.res.page_count, self.match.page_number, self.res.filename)
 
 
 class SearchPage(QWidget):

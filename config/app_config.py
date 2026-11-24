@@ -1,6 +1,6 @@
 """Application-level configuration (which library is active, machine-specific paths).
 
-Per-library options (OCR language, recovery period, ...) live in the library's own
+Per-library options (recovery period, cache size, ...) live in the library's own
 database so that every library keeps its own settings.
 """
 import json
@@ -15,10 +15,6 @@ APP_NAME = "PDFSerialFinder"
 APP_VERSION = "1.0.0"
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
-    "ocr_enabled": True,
-    "ocr_language": "eng",
-    "ocr_dpi": 300,
-    "min_text_chars": 25,
     "missing_file_recovery_days": 0,   # 0 = a deleted file is forgotten at the next sync
     "preview_cache_max_mb": 500,
     "fuzzy_cutoff": 0.8,
@@ -47,7 +43,6 @@ class AppConfig:
         self.data: Dict[str, Any] = {
             "active_library_path": None,
             "known_libraries": [],
-            "tesseract_cmd": "",
         }
         self.load()
 
@@ -99,11 +94,3 @@ class AppConfig:
     @property
     def known_libraries(self) -> List[str]:
         return list(self.data.get("known_libraries", []))
-
-    @property
-    def tesseract_cmd(self) -> str:
-        return self.data.get("tesseract_cmd", "") or ""
-
-    def set_tesseract_cmd(self, cmd: str) -> None:
-        self.data["tesseract_cmd"] = cmd
-        self.save()

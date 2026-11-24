@@ -8,7 +8,6 @@ python -m pytest -q || goto :err
 pyinstaller pdf_serial_finder.spec --noconfirm || goto :err
 echo.
 echo Build finished: dist\PDFSerialFinder\PDFSerialFinder.exe
-echo Tesseract: install it separately (see README) or copy it to vendor\tesseract before building.
 exit /b 0
 :err
 echo Build failed.

@@ -4,7 +4,6 @@ from PySide6.QtCore import QObject, Signal
 
 from config.app_config import AppConfig
 from core.library_manager import Library, LibraryUnavailable
-from core.ocr_engine import OcrEngine
 from database.db_manager import DatabaseCorruptError
 
 
@@ -39,8 +38,3 @@ class AppContext(QObject):
     def activate(self, library: Library) -> None:
         self.library = library
         self.config.set_active_library(library.root)
-
-    def ocr_engine(self) -> OcrEngine:
-        s = self.library.settings() if self.library else {}
-        return OcrEngine(s.get("ocr_language", "eng"), self.config.tesseract_cmd, s.get("ocr_dpi", 300),
-                         s.get("min_text_chars", 25))

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from core.library_manager import Library
-from core.ocr_engine import OcrEngine
 from core.pdf_processor import process_document
 from core.progress import Progress, ProgressCB, check_cancel, Cancelled
 from database import schema as S
@@ -40,7 +39,7 @@ class SyncReport:
         return txt or "No changes"
 
 
-def sync_library(library: Library, ocr: Optional[OcrEngine] = None, progress_cb: ProgressCB = None,
+def sync_library(library: Library, progress_cb: ProgressCB = None,
                  cancel: Optional[threading.Event] = None, process: bool = True) -> SyncReport:
     library.check_accessible()
     report = SyncReport()
@@ -48,7 +47,6 @@ def sync_library(library: Library, ocr: Optional[OcrEngine] = None, progress_cb:
     conn = library.connect()
     try:
         settings = library.settings(conn)
-        ocr = ocr or OcrEngine(settings["ocr_language"], dpi=settings["ocr_dpi"], min_chars=settings["min_text_chars"])
 
         def emit(msg, **kw):
             prog.message = msg
@@ -124,8 +122,6 @@ def sync_library(library: Library, ocr: Optional[OcrEngine] = None, progress_cb:
         # ---- (re)process what needs it ----------------------------------------------
         if process:
             states = list(S.PENDING_STATUSES)
-            if settings.get("ocr_enabled", True) and ocr.available():
-                states.append(S.ST_WAITING)
             q = ",".join("?" * len(states))
             todo = conn.execute(f"SELECT * FROM documents WHERE availability_status='available' AND "
                                 f"processing_status IN ({q}) ORDER BY import_timestamp", states).fetchall()
@@ -135,8 +131,7 @@ def sync_library(library: Library, ocr: Optional[OcrEngine] = None, progress_cb:
                 prog.done, prog.current = n, row["filename"]
                 emit(f"Indexing {row['filename']}")
                 path = library.abs_path(row["relative_path"])
-                res = process_document(conn, row["document_id"], path, settings, ocr, cancel,
-                                       reuse_ok_pages=(row["processing_status"] == S.ST_WAITING),
+                res = process_document(conn, row["document_id"], path, cancel,
                                        page_cb=lambda i, k, name=row["filename"]: emit(f"Indexing {name}: page {i}/{k}"))
                 report.processed += 1
                 if res.status == S.ST_FAILED:
@@ -176,13 +171,13 @@ def _check_present(library, conn, rel, row, st, missing, report, cancel):
         if unchanged:
             conn.execute("UPDATE documents SET file_size=?, modified_ns=?, availability_status='available', "
                          "last_verified_timestamp=? WHERE document_id=?", (st.st_size, st.st_mtime_ns, now(), did))
-            if row["processing_status"] in (S.ST_PROCESSING, S.ST_OCR, S.ST_TEXT):
+            if row["processing_status"] in (S.ST_PROCESSING,):
                 conn.execute("UPDATE documents SET processing_status=? WHERE document_id=?", (S.ST_IMPORTED, did))
         else:
             # invalidate stale text/index immediately; new data is written only after successful processing
             remove_document_pages(conn, did)
             conn.execute("UPDATE documents SET processing_status=?, availability_status='available', page_count=0, "
-                         "ocr_pages=0, last_error=NULL WHERE document_id=?", (S.ST_MODIFIED, did))
+                         "last_error=NULL WHERE document_id=?", (S.ST_MODIFIED, did))
     if was_missing and unchanged:
         report.restored.append(row["filename"])
     elif was_missing:
