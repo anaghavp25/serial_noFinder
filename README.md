@@ -53,3 +53,7 @@ workers/ (background sync)   ui/ (main_window, search_page, documents_page, pdf_
 * Subfolders of the chosen folder are included. Password-protected or damaged PDFs are listed with a note and are not searchable.
 * Keep the folder on a local or USB drive (the index uses SQLite WAL mode), and choose a folder you can write to.
 * OCR runs one page at a time, so large scanned batches load slowly (search works on what is already loaded).
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5c7b1b18602eff397d717e00ebaa2cffb652681f
